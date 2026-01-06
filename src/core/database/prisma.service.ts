@@ -9,26 +9,6 @@ import { PrismaClient } from '@prisma/client';
 export class PrismaService 
     extends PrismaClient 
     implements OnModuleInit, OnModuleDestroy {
-  
-    // Constructeur du PrismaService.
-  constructor() {
-    /**
-     * super() appelle le constructeur de PrismaClient.
-     * On lui passe un objet de configuration pour définir la source de données.
-     */
-    super({
-      datasources: {
-        db: {
-          /**
-           * Injection  Dynamique de l'URL de connexion.
-           * En Prisma 7, l'URL est extraite des variables d'environnement ici
-           * plutôt que d'être lue statiquement dans le fichier schema.prisma.
-           */
-          url: process.env.DATABASE_URL,
-        },
-      },
-    });
-  }
 
   /**
    * Initialisation du module.
