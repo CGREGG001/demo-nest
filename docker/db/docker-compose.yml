@@ -1,0 +1,20 @@
+services:
+  # 1. Le Service Base de Données
+  db:
+    image: postgres:15-alpine
+    container_name: dem-nest-db
+    restart: always
+
+    # Variables d'environnement pour PostgreSQL
+    env_file:
+      - ./envs/db.env # Charge POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
+    # Port exposé pour que l'API locale puisse se connecter
+    ports:
+      - '5432:5432'
+
+    # Volume persistant
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
