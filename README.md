@@ -124,9 +124,10 @@ npm run prepare   # Husky
 
 ## Inner documentation
 
-- [docs/setup-projects.md](docs/setup-project.md)
+- [docs/setup-project.md](docs/setup-project.md)
 - [docs/setup-husky.md](docs/setup-husky.md)
 - [docs/setup-swagger.md](docs/setup-swagger.md)
+- [docs/setup-prisma-docker.md](docs/setup-prisma-docker.md)
 
 ---
 
