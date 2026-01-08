@@ -132,4 +132,4 @@ npm run prepare   # Husky
 
 ## Licence
 
-Ce projet est distribué sous licence MIT.
+Ce projet est distribué sous [licence MIT](./LICENSE).
