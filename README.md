@@ -125,6 +125,7 @@ npm run prepare   # Husky
 ## Inner documentation
 
 - [docs/setup-projects.md](docs/setup-project.md)
+- [docs/setup-husky.md](docs/setup-husky.md)
 
 ---
 
