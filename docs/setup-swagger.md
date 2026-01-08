@@ -1,3 +1,5 @@
+[⬅ Back to README](../README.md)
+
 # Setup Swagger
 
 ## 1. Installer les dépendances Swagger
