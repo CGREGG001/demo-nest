@@ -124,6 +124,12 @@ npm run prepare   # Husky
 
 ---
 
+## Documentation interne
+
+- [docs/setup-projects.md](docs/setup-project.md)
+
+---
+
 ## Restons en contact
 
 - Auteur - [Gregory Colard](https://github.com/CGREGG001)
