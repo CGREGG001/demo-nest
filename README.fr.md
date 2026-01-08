@@ -4,24 +4,24 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-🇬🇧 English version  
-🇫🇷 Version française → [README.fr.md](./README.fr.md)
+🇫🇷 Version française  
+🇬🇧 English version → [README.md](./README.md)
 
 ## Description
 
-Backend API built with NestJS, Prisma 7, and PostgreSQL (Docker).  
-The project follows a clean modular architecture with professional tooling (Husky, Swagger, global validation, Git workflow).
+Backend API construite avec NestJS, Prisma 7, et PostgreSQL (Docker).  
+Le projet suit une architecture modulaire propre, avec une configuration professionnelle (Husky, Swagger, validation globale, Git workflow).
 
 ---
 
-## Requirements
+## Prérequis
 
-- Node.js ≥ 20.19 (required by Prisma 7)
-- npm ≥ 10 (bundled with Node 20+)
+- Node.js ≥ 20.19 (requis pour Prisma 7)
+- npm ≥ 10 (fournie avec Node 20+)
 - Docker & Docker Compose
 - Nest CLI
 
-A `.nvmrc` file is included to enforce Node.js 20.19.
+un fichier `.nvmrc` est inclus pour forcer Node.js 20.19.
 
 ```bash
 npm install -g @nestjs/cli
@@ -29,7 +29,7 @@ npm install -g @nestjs/cli
 
 ---
 
-## Installation
+## Installation du projet
 
 ```bash
 npm install
@@ -37,7 +37,7 @@ npm install
 
 ---
 
-## Start the database (Docker)
+## Lancer la base de données (Docker)
 
 ```bash
 docker compose -f docker/db/docker-compose.yml up -d
@@ -47,13 +47,13 @@ docker compose -f docker/db/docker-compose.yml up -d
 
 ## Prisma
 
-**To generate the client**
+**Générer le client**
 
 ```bash
 npx prisma generate
 ```
 
-**Apply migrations**
+**Appliquer les migrations**
 
 ```bash
 npx prisma migrate dev
@@ -61,9 +61,9 @@ npx prisma migrate dev
 
 ---
 
-## Run the application
+## Lancer l'application
 
-**Development**
+**Développement**
 
 ```bash
 npm run start:dev
@@ -77,9 +77,9 @@ npm run start:prod
 
 ---
 
-## API Documentation (Swagger)
+## Documentation API (Swagger)
 
-Available once the application is running
+Une fois l'application lancée
 
 ```text
 http://localhost:3000/api
@@ -87,7 +87,7 @@ http://localhost:3000/api
 
 ---
 
-## Project structure
+## Structure du projet
 
 ```text
 src/
@@ -95,6 +95,8 @@ src/
     database/
       prisma.service.ts
       database.module.ts
+  modules/
+  shared/
   main.ts
 prisma/
 docker/
@@ -112,7 +114,7 @@ npm run test:cov
 
 ---
 
-## Scripts
+## Scripts utiles
 
 ```bash
 npm run format
@@ -122,12 +124,12 @@ npm run prepare   # Husky
 
 ---
 
-## Stay in touch
+## Restons en contact
 
-- Author - [Gregory Colard](https://github.com/CGREGG001)
+- Auteur - [Gregory Colard](https://github.com/CGREGG001)
 
 ---
 
-## License
+## Licence
 
-This project is licensed under the MIT License.
+Ce projet est distribué sous licence MIT.
