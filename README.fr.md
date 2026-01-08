@@ -128,6 +128,7 @@ npm run prepare   # Husky
 
 - [docs/setup-projects.md](docs/setup-project.md)
 - [docs/setup-husky.md](docs/setup-husky.md)
+- [docs/setup-swagger.md](docs/setup-swagger.md)
 
 ---
 
