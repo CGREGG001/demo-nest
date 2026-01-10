@@ -25,5 +25,5 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   @MaxLength(20)
-  name?: string;
+  name?: string | null;
 }
