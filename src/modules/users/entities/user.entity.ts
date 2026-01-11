@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { user } from '@prisma/client';
+import { User } from '@prisma/client';
 
 /**
  * UserEntity : Représente la structure des données envoyées au client (Sortie API).
@@ -9,7 +9,7 @@ import { user } from '@prisma/client';
  * 3. Pour l'Intégrité : Garantit que l'objet est une instance réelle de classe.
  */
 
-export class UserEntity implements user {
+export class UserEntity implements User {
   @ApiProperty({
     description: 'Unique identifier of the user',
     example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
@@ -39,7 +39,7 @@ export class UserEntity implements user {
     description: 'Date when the user was last updated',
     example: '2025-01-10T09:15:32.123Z',
   })
-  updateAt: Date;
+  updatedAt: Date;
 
   /**
    * Si un champ 'password' est ajouté dans le schéma Prisma plus tard :
