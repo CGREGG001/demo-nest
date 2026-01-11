@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
 /**
@@ -6,6 +6,7 @@ import { PrismaService } from './prisma.service';
  * Il centralise la configuration de Prisma et permet son injection
  * dans les services métiers (ex: UsersService, PostsService).
  */
+@Global() // Rendre le module global évite de devoir l'importer partout
 @Module({
   // Déclare le service pour qu'il soit instancié par le système d'injection de NestJS
   providers: [PrismaService],

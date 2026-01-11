@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { user } from '../../../generated/prisma';
+import { user } from '@prisma/client';
 
 /**
  * UserEntity : Représente la structure des données envoyées au client (Sortie API).
