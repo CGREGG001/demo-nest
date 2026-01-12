@@ -9,7 +9,7 @@ node --version
 npm --version
 ```
 
-_Node 20.19+ recommandé pour Prisma 7._
+_Node 18+ recommandé. Compatible et testé avec Node 22._
 
 ---
 
