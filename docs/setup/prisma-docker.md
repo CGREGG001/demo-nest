@@ -1,11 +1,11 @@
 [⬅ Back to README](../README.md)
 
-# Setup Prisma 7 + PostgreSQL (Docker)
+# Setup Prisma 5 + PostgreSQL (Docker)
 
-## 1. Installation de Prisma 7
+## 1. Installation de Prisma 5.22
 
 ```bash
-npm install prisma@latest @prisma/client@latest
+npm install prisma@5.22.0 @prisma/client@5.22.0
 ```
 
 ---
@@ -21,7 +21,6 @@ cela crée :
 ```bash
 prisma/
   schema.prisma
-prisma.config.ts
 .env
 ```
 
@@ -39,49 +38,19 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
 
 ---
 
-## 4. Configuration Prisma 7
+## 4. Configuration Prisma
 
-### 4.1 `schema.prisma`
-
-<div style="border-left:4px solid #ffc002; padding-left:12px; margin:12px 0;">
-⚠️ Prisma 7 ne supporte plus url dans le datasource.
-</div>
-
-L’URL est désormais définie dans `prisma.config.ts`.
+`schema.prisma`
 
 ```json
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-```
-
----
-
-### 4.2 `prisma.config.ts`
-
-<div style="border-left:4px solid #ffc002; padding-left:12px; margin:12px 0;">
-👉 C’est ici que Prisma 7 lit la variable DATABASE_URL.
-</div>
-
-```ts
-import 'dotenv/config';
-import { defineConfig, env } from 'prisma/config';
-
-export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  migrations: {
-    path: 'prisma/migrations',
-  },
-  engine: 'classic',
-  datasource: {
-    url: env('DATABASE_URL'),
-  },
-});
 ```
 
 ---
