@@ -71,4 +71,16 @@ export class UsersService {
 
     return new UserEntity(updatedUser);
   }
+
+  /**
+   * Suppression d"un utilisateur
+   */
+  async delete(id: string): Promise<UserEntity> {
+    // Vérfie si l'utilisateur existe
+    await this.findOne(id);
+    // Suppression en DB
+    const deletedUser = await this.prismaService.user.delete({ where: { id } });
+
+    return new UserEntity(deletedUser);
+  }
 }
