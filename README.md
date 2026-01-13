@@ -9,19 +9,19 @@
 
 ## Description
 
-Backend API built with NestJS, Prisma 7, and PostgreSQL (Docker).  
+Backend API built with NestJS, prisma 5.22, and PostgreSQL (Docker).  
 The project follows a clean modular architecture with professional tooling (Husky, Swagger, global validation, Git workflow).
 
 ---
 
 ## Requirements
 
-- Node.js ≥ 20.19 (required by Prisma 7)
+- Node.js ≥ 18 (required by prisma 5.22)
 - npm ≥ 10 (bundled with Node 20+)
 - Docker & Docker Compose
 - Nest CLI
 
-A `.nvmrc` file is included to enforce Node.js 20.19.
+A `.nvmrc` file is included to enforce the recommended NodeJS version.
 
 ```bash
 npm install -g @nestjs/cli
@@ -90,15 +90,26 @@ http://localhost:3000/api
 ## Project structure
 
 ```text
+docker/
+  db/
+docs/
+  assets/
+  modules/
+  setup/
+prisma/
 src/
   core/
-    database/
-      prisma.service.ts
-      database.module.ts
-  main.ts
-prisma/
-docker/
+  modules/
 ```
+
+---
+
+## Tech stack
+
+- NestJS 11
+- Prisma 5.22
+- PostgreSQL (Docker)
+- Node.js 22
 
 ---
 
@@ -124,10 +135,17 @@ npm run prepare   # Husky
 
 ## Inner documentation
 
-- [docs/setup-project.md](docs/setup-project.md)
-- [docs/setup-husky.md](docs/setup-husky.md)
-- [docs/setup-swagger.md](docs/setup-swagger.md)
-- [docs/setup-prisma-docker.md](docs/setup-prisma-docker.md)
+- [docs/setup/project.md](docs/setup/project.md)
+- [docs/setup/husky.md](docs/setup/husky.md)
+- [docs/setup/swagger.md](docs/setup/swagger.md)
+- [docs/setup/prisma-docker.md](docs/setup/prisma-docker.md)
+- [docs/modules/users/module-users.md](docs/modules/users/module-users.md)
+
+---
+
+## Documented modules
+
+- [Users module](docs/modules/users/module-users.md)
 
 ---
 
