@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -56,5 +56,13 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return await this.usersService.update(id, updateUserDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete user by id' })
+  @ApiResponse({ status: 200, type: UserEntity })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<UserEntity> {
+    return await this.usersService.delete(id);
   }
 }
