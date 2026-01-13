@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@core/database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Prisma } from '@prisma/client';
@@ -38,5 +38,20 @@ export class UsersService {
     // Prisma retourne un objet brut de la db. Il faut mapper (map) chaque résultat dans un UserEntity
     // pour assurer une sortie API cohérente, la documentation Swagger et l'isolation du domain.
     return users.map((u) => new UserEntity(u));
+  }
+
+  /**
+   * Retourne un user sur base de son id
+   */
+  async findOne(id: string): Promise<UserEntity> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found.`);
+    }
+
+    return new UserEntity(user);
   }
 }

@@ -1,5 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserEntity } from './entities/user.entity';
@@ -30,5 +36,13 @@ export class UsersController {
   })
   async findAll(): Promise<UserEntity[]> {
     return await this.usersService.findAll();
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by id' })
+  @ApiResponse({ status: 200, type: UserEntity })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async findOne(@Param('id') id: string): Promise<UserEntity> {
+    return await this.usersService.findOne(id);
   }
 }
