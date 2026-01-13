@@ -16,12 +16,14 @@ Il s’appuie sur :
 ```code
 src/modules/users
 ├── dto
-│   └── create-user.dto.ts
+│   ├── create-user.dto.ts
+│   └── update-user.dto.ts
 ├── entities
 │   └── user.entity.ts
+├── services
+│   └── users.service.ts
 ├── users.controller.ts
-├── users.module.ts
-└── users.service.ts
+└── users.module.ts
 ```
 
 Rôle de chaque fichier
@@ -138,6 +140,27 @@ Réponse
 ]
 ```
 
+### ➤ GET `/users/:id`
+
+Récupère un utilisateur par son UUID.
+
+- **Validation** : `ParseUUIDPipe` sur l'ID.
+- **Erreur 404** : Si l'utilisateur n'existe pas.
+
+### ➤ PATCH `/users/:id`
+
+Met à jour partiellement un utilisateur.
+
+- **DTO** : `UpdateUserDto` (Partial de CreateUserDto).
+- **Validation** : `ParseUUIDPipe` sur l'ID.
+
+### ➤ DELETE `/users/:id`
+
+Supprime un utilisateur.
+
+- **Réponse** : `200 OK` avec l'entité supprimée.
+- **Validation** : `ParseUUIDPipe` sur l'ID.
+
 ## 7. Flux interne (Controller → Service → Prisma → Entity)
 
 ```code
@@ -152,6 +175,20 @@ PrismaService.user.create()
 new UserEntity()
    ↓
 Réponse API
+```
+
+```code
+PATCH /users/:id
+   ↓
+ParseUUIDPipe (Vérifie le format 400)
+   ↓
+UsersController.update()
+   ↓
+UsersService.findOne() (Vérifie l'existence 404)
+   ↓
+UsersService.update()
+   ↓
+PrismaService.user.update()
 ```
 
 ![alt text](../../assets/usersSequenceDiagram.png)
