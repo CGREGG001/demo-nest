@@ -3,6 +3,7 @@ import { PrismaService } from '@core/database/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Prisma } from '@prisma/client';
 import { UserEntity } from './entities/user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -53,5 +54,21 @@ export class UsersService {
     }
 
     return new UserEntity(user);
+  }
+
+  /*
+   * Mise à jour d'un utilisateur
+   */
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
+    // Vérifier si l'utilisateur existe
+    await this.findOne(id);
+
+    // Appliquer la mise à jour en DB
+    const updatedUser = await this.prismaService.user.update({
+      where: { id },
+      data: updateUserDto, // Prisma ne met à jour que les élements présent
+    });
+
+    return new UserEntity(updatedUser);
   }
 }
