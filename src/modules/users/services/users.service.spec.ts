@@ -159,4 +159,39 @@ describe('UsersService', () => {
       );
     });
   });
+
+  /*
+   * DELETE
+   */
+  describe('delete', () => {
+    it('should delete a user successfully', async () => {
+      const existingUser = { id: 'uuid-123', email: 'test@test.com' };
+
+      // 1. Simuler findOne (pour la vérification d'existence)
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(existingUser);
+      // 2. Simuler le delete de Prisma
+      (prisma.user.delete as jest.Mock).mockResolvedValue(existingUser);
+
+      const result = await service.delete('uuid-123');
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.delete).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+      });
+
+      expect(result).toBeInstanceOf(UserEntity);
+      expect(result.id).toBe('uuid-123');
+    });
+
+    it('should throw NotFoundException if user to delete does not exist', async () => {
+      // Simuler que l'utilisateur n'est pas trouvé
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.delete('invalid-id')).rejects.toThrow(NotFoundException);
+
+      // On vérifie que delete n'a JAMAIS été appelé si l'user n'existe pas
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.delete).not.toHaveBeenCalled();
+    });
+  });
 });
