@@ -122,4 +122,41 @@ describe('UsersService', () => {
       await expect(service.findOne('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
+
+  /*
+   * TESTS UPDATE
+   */
+  describe('update', () => {
+    it('should update a user and return UserEntity', async () => {
+      const existingUser = { id: 'uuid-123', email: 'old@test.com', name: 'Old Name' };
+      const updateDto = { name: 'New Name' };
+      const updatedUser = { ...existingUser, ...updateDto };
+
+      // 1. Simuler findOne (pour la vérification d'existence)
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(existingUser);
+      // 2. Simuler l'update réel
+      (prisma.user.update as jest.Mock).mockResolvedValue(updatedUser);
+
+      const result = await service.update('uuid-123', updateDto);
+
+      // Vérifier que Prisma update a été appelé avec les bons arguments
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+        data: updateDto,
+      });
+
+      expect(result).toBeInstanceOf(UserEntity);
+      expect(result.name).toBe('New Name');
+    });
+
+    it('should throw NotFoundException if user to update does not exist', async () => {
+      // Simuler que l'utilisateur n'est pas trouvé par findOne
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.update('invalid-id', { name: 'New Name' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
