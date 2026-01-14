@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { UserEntity } from '../entities/user.entity';
+import { NotFoundException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -96,6 +97,29 @@ describe('UsersService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual([]);
+    });
+  });
+
+  /*
+   * FINDONE
+   */
+  describe('findOne', () => {
+    it('should return a user entity if found', async () => {
+      const user = { id: 'uuid-1', email: 'test@test.com' };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
+
+      const result = await service.findOne('uuid-1');
+
+      expect(result).toBeInstanceOf(UserEntity);
+      expect(result.id).toBe('uuid-1');
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      // On simule un retour nule de Prisma
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      // On vérifie que la promesse est rejetée avec l'erreur 404
+      await expect(service.findOne('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 });
