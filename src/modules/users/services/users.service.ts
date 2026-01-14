@@ -4,18 +4,41 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { Prisma } from '@prisma/client';
 import { UserEntity } from '../entities/user.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class UsersService {
+  constructor(private readonly prismaService: PrismaService) {}
+
   /**
    * Créer un nouveau user
    * Envoi ConflictException si l'email existe déjà.
    */
-  constructor(private readonly prismaService: PrismaService) {}
-
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
+    //
+    const { password, ...rest } = createUserDto;
+
+    // Hashage du mot de passe
+    const hashedPassword = await argon2.hash(password);
+
     try {
-      const createdUser = await this.prismaService.user.create({ data: createUserDto });
+      const createdUser = await this.prismaService.user.create({
+        data: {
+          /*
+           * ...rest contient toutes les propriétés du DTO sauf celles que nous avons
+           * explicitement extraites (ici : password). Le spread operator ... permet donc
+           * de reconstruire un objet propre et conforme au schéma Prisma.
+           */
+          ...rest,
+
+          /*
+           * On remplace le mot de passe en clair par sa version hashée.
+           * Cela garantit que Prisma n’enregistre jamais le password brut en base.
+           */
+          password: hashedPassword,
+        },
+      });
+
       return new UserEntity(createdUser);
     } catch (error: unknown) {
       // On vérifie si l'erreur vient de Prisma
@@ -28,6 +51,7 @@ export class UsersService {
       throw error;
     }
   }
+
   /**
    * Retourne tous les users triés par date de création (plus récent en premier)
    */
@@ -56,7 +80,7 @@ export class UsersService {
     return new UserEntity(user);
   }
 
-  /*
+  /**
    * Mise à jour d'un utilisateur
    */
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserEntity> {
@@ -73,10 +97,10 @@ export class UsersService {
   }
 
   /**
-   * Suppression d"un utilisateur
+   * Suppression d'un utilisateur
    */
   async delete(id: string): Promise<UserEntity> {
-    // Vérfie si l'utilisateur existe
+    // Vérifie si l'utilisateur existe
     await this.findOne(id);
     // Suppression en DB
     const deletedUser = await this.prismaService.user.delete({ where: { id } });
