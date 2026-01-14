@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './services/users.service';
 import { UserEntity } from './entities/user.entity';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -117,6 +119,22 @@ describe('UsersController', () => {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.delete).toHaveBeenCalledWith('uuid-1');
       expect(result).toEqual(user);
+    });
+  });
+
+  /*
+   * TEST INDÉPENDANT DES PIPES
+   */
+  describe('Global Validations', () => {
+    const target = new ValidationPipe({ whitelist: true, transform: true });
+
+    it('should validate CreateUserDto', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const metadata = { type: 'body', metatype: CreateUserDto } as any;
+      const dto = { email: 'invalid-email' }; // Manque 'name' et email invalide
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await expect(target.transform(dto, metadata)).rejects.toThrow(BadRequestException);
     });
   });
 });
