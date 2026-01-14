@@ -2,7 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { UserEntity } from '../entities/user.entity';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import * as argon2 from 'argon2';
+import { instanceToPlain } from 'class-transformer';
+
+// Simulation du module argon2
+jest.mock('argon2', () => ({
+  hash: jest.fn().mockResolvedValue('hashed_password'),
+}));
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -40,34 +48,62 @@ describe('UsersService', () => {
    * CREATE
    */
   describe('create', () => {
-    it('should create a user and return UserEntity', async () => {
-      const dto = { email: 'john.doe@example.com', name: 'John Doe' };
+    it('should create a user with a hashed password', async () => {
+      const dto = { email: 'test@test.com', password: 'plainPassword123', name: 'Greg' };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...rest } = dto;
 
       (prisma.user.create as jest.Mock).mockResolvedValue({
         id: 'uuid-123',
-        email: dto.email,
-        name: dto.name,
+        ...rest,
+        password: 'hashed_password',
       });
 
-      const result = await service.create(dto);
+      const result: UserEntity = await service.create(dto);
 
+      // Vérifier que le password n'est pas exposé après transformation (class-transformer)
+      const plain: Record<string, any> = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
+
+      // Vérifier que le hash est bien appelé avec le password brut
+      expect(argon2.hash).toHaveBeenCalledWith('plainPassword123');
+
+      // Vérifier que Prisma reçoit le password hashé
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(prisma.user.create).toHaveBeenCalledWith({
-        data: dto,
+        data: {
+          ...rest,
+          password: 'hashed_password',
+        },
       });
 
-      expect(result).toBeDefined();
-      expect(result.id).toBe('uuid-123');
-      expect(result.email).toBe(dto.email);
+      // Vérifier que Prisma n'a jamais reçu le password brut
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.create).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          data: expect.objectContaining({
+            password: 'plainPassword123',
+          }),
+        }),
+      );
+
       expect(result).toBeInstanceOf(UserEntity);
+      expect(result.id).toBe('uuid-123');
     });
 
-    it('should throw if prisma fails (ex: duplicate email)', async () => {
-      const dto = { email: 'john.doe@example.com', name: 'John Doe' };
+    it('should throw ConflictException if email already exists (P2002)', async () => {
+      const dto = { email: 'duplicate@test.com', password: 'password123' };
 
-      (prisma.user.create as jest.Mock).mockRejectedValue(new Error('Unique constraint'));
+      // On simule une erreur typée Prisma avec le code P2002
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      });
 
-      await expect(service.create(dto)).rejects.toThrow();
+      (prisma.user.create as jest.Mock).mockRejectedValue(prismaError);
+
+      await expect(service.create(dto)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -77,8 +113,8 @@ describe('UsersService', () => {
   describe('findAll', () => {
     it('should return an array of users', async () => {
       (prisma.user.findMany as jest.Mock).mockResolvedValue([
-        { id: '1', email: 'a@test.com' },
-        { id: '2', email: 'b@test.com' },
+        { id: '1', email: 'a@test.com', password: 'hashed_in_db', name: 'John Doe' },
+        { id: '2', email: 'b@test.com', password: 'hashed_in_db', name: 'Jane Doe' },
       ]);
 
       const result = await service.findAll();
@@ -105,8 +141,12 @@ describe('UsersService', () => {
    */
   describe('findOne', () => {
     it('should return a user entity if found', async () => {
-      const user = { id: 'uuid-1', email: 'test@test.com' };
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'uuid-1',
+        email: 'test@test.com',
+        password: 'hashed_in_db',
+        name: 'John Doe',
+      });
 
       const result = await service.findOne('uuid-1');
 

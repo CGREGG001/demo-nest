@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 
@@ -8,7 +9,6 @@ import { User } from '@prisma/client';
  * 2. Pour la Sécurité : Permet de filtrer les données (ex: cacher le password).
  * 3. Pour l'Intégrité : Garantit que l'objet est une instance réelle de classe.
  */
-
 export class UserEntity implements User {
   @ApiProperty({
     description: 'Unique identifier of the user',
@@ -41,13 +41,8 @@ export class UserEntity implements User {
   })
   updatedAt: Date;
 
-  /**
-   * Si un champ 'password' est ajouté dans le schéma Prisma plus tard :
-   * Utilisez @Exclude() ici pour qu'il ne soit JAMAIS envoyé dans le JSON de réponse,
-   * même s'il est présent dans l'objet retourné par la base de données.
-   */
-  // @Exclude()
-  // password: string;
+  @Exclude() // Empêche la sérialisation vers le JSON
+  password: string;
 
   /**
    * Le constructeur permet de transformer un objet simple (littéral) provenant

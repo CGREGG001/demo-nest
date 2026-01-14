@@ -2,8 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './services/users.service';
 import { UserEntity } from './entities/user.entity';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  ValidationPipe,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
+import { instanceToPlain } from 'class-transformer';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -39,16 +45,36 @@ describe('UsersController', () => {
    */
   describe('create', () => {
     it('should call service.create and return result', async () => {
-      const dto = { email: 'test@test.com', name: 'Gregory' };
-      const user = new UserEntity({ id: 'uuid-1', ...dto });
+      const dto = { email: 'test@test.com', password: 'Password123!', name: 'John Doe' };
+      const createdUser = new UserEntity({
+        id: 'uuid-1',
+        email: dto.email,
+        name: dto.name,
+        password: 'hashed_password',
+      });
 
-      (service.create as jest.Mock).mockResolvedValue(user);
+      (service.create as jest.Mock).mockResolvedValue(createdUser);
 
       const result = await controller.create(dto);
 
+      // Vérifie que le controller transmet bien le DTO complet (avec password)
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.create).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(user);
+
+      // Vérifie que le retour est bien une UserEntity
+      expect(result).toBeInstanceOf(UserEntity);
+
+      // Vérifie que le password n'est pas exposé après transformation
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
+    });
+
+    it('should propagate ConflictException from service', async () => {
+      (service.create as jest.Mock).mockRejectedValue(new ConflictException());
+
+      await expect(controller.create({ email: 'x', password: 'y' })).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -75,7 +101,12 @@ describe('UsersController', () => {
    */
   describe('findOne', () => {
     it('should return a user', async () => {
-      const user = new UserEntity({ id: 'uuid-1', email: 'test@test.com' });
+      const user = new UserEntity({
+        id: 'uuid-1',
+        email: 'test@test.com',
+        name: 'Greg',
+        password: 'hashed',
+      });
 
       (service.findOne as jest.Mock).mockResolvedValue(user);
 
@@ -83,7 +114,16 @@ describe('UsersController', () => {
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.findOne).toHaveBeenCalledWith('uuid-1');
-      expect(result).toEqual(user);
+      expect(result).toBeInstanceOf(UserEntity);
+
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      (service.findOne as jest.Mock).mockRejectedValue(new NotFoundException());
+
+      await expect(controller.findOne('invalid')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -92,16 +132,23 @@ describe('UsersController', () => {
    */
   describe('update', () => {
     it('should update a user', async () => {
-      const dto = { name: 'Updated' };
-      const user = new UserEntity({ id: 'uuid-1', email: 'test@test.com', name: 'Updated' });
+      const updated = new UserEntity({
+        id: 'uuid-1',
+        email: 'test@test.com',
+        name: 'Updated',
+        password: 'hashed',
+      });
 
-      (service.update as jest.Mock).mockResolvedValue(user);
+      (service.update as jest.Mock).mockResolvedValue(updated);
 
-      const result = await controller.update('uuid-1', dto);
+      const result = await controller.update('uuid-1', { name: 'Updated' });
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(service.update).toHaveBeenCalledWith('uuid-1', dto);
-      expect(result).toEqual(user);
+      expect(service.update).toHaveBeenCalledWith('uuid-1', { name: 'Updated' });
+      expect(result).toBeInstanceOf(UserEntity);
+
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
     });
   });
 
@@ -110,15 +157,23 @@ describe('UsersController', () => {
    */
   describe('delete', () => {
     it('should delete a user', async () => {
-      const user = new UserEntity({ id: 'uuid-1', email: 'test@test.com' });
+      const deleted = new UserEntity({
+        id: 'uuid-1',
+        email: 'test@test.com',
+        name: 'John Doe',
+        password: 'hashed',
+      });
 
-      (service.delete as jest.Mock).mockResolvedValue(user);
+      (service.delete as jest.Mock).mockResolvedValue(deleted);
 
       const result = await controller.delete('uuid-1');
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(service.delete).toHaveBeenCalledWith('uuid-1');
-      expect(result).toEqual(user);
+      expect(result).toBeInstanceOf(UserEntity);
+
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
     });
   });
 
