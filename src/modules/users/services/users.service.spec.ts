@@ -35,6 +35,9 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 
+  /*
+   * CREATE
+   */
   describe('create', () => {
     it('should create a user and return UserEntity', async () => {
       const dto = { email: 'john.doe@example.com', name: 'John Doe' };
@@ -64,6 +67,35 @@ describe('UsersService', () => {
       (prisma.user.create as jest.Mock).mockRejectedValue(new Error('Unique constraint'));
 
       await expect(service.create(dto)).rejects.toThrow();
+    });
+  });
+
+  /*
+   * FINDALL
+   */
+  describe('findAll', () => {
+    it('should return an array of users', async () => {
+      (prisma.user.findMany as jest.Mock).mockResolvedValue([
+        { id: '1', email: 'a@test.com' },
+        { id: '2', email: 'b@test.com' },
+      ]);
+
+      const result = await service.findAll();
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.findMany).toHaveBeenCalled();
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('1');
+      expect(result[0]).toBeInstanceOf(UserEntity);
+    });
+
+    it('should return an empty array when no users exist', async () => {
+      // On simule un retour de tableau vide de Prisma
+      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([]);
     });
   });
 });
