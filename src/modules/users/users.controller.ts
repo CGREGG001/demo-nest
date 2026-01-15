@@ -1,10 +1,12 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './services/users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,6 +26,8 @@ export class UsersController {
     description: 'User successfully created',
     type: UserEntity,
   })
+  @ApiBadRequestResponse({ description: 'Invalid payload.' })
+  @ApiResponse({ status: 409, description: 'Email already exists.' })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserEntity> {
     // On récupère la donnée brute du service
     return await this.usersService.create(createUserDto);
@@ -42,27 +46,32 @@ export class UsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get user by id' })
-  @ApiResponse({ status: 200, type: UserEntity })
+  @ApiOkResponse({ description: 'User retrieved', type: UserEntity })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findOne(@Param('id') id: string): Promise<UserEntity> {
+  // new ParseUUIDPipe() : Empêche l'exécution inutile d'une requête SQL si l'ID envoyé n'est pas un UUID.
+  async findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<UserEntity> {
     return await this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update user by id' })
+  @ApiOperation({ summary: 'Update user profile' })
   @ApiOkResponse({ description: 'User updated', type: UserEntity })
+  @ApiBadRequestResponse({ description: 'Invalid payload.' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async update(
     @Param('id', new ParseUUIDPipe()) id: string, // Envoi Exception si pas un UUID valide.
     @Body() updateUserDto: UpdateUserDto,
-  ) {
+  ): Promise<UserEntity> {
     return await this.usersService.update(id, updateUserDto);
   }
 
   @Patch(':id/password')
-  @ApiOperation({ summary: 'Update user password by id' })
-  @ApiOkResponse({ description: 'Password updated', type: UpdateUserPasswordDto })
-  @ApiResponse({ status: 404, description: 'User not foubd' })
+  @ApiOperation({ summary: 'Update user password' })
+  @ApiOkResponse({ description: 'Password updated successfully.', type: UserEntity })
+  @ApiBadRequestResponse({ description: 'Invalid payload.' })
+  @ApiUnauthorizedResponse({ description: 'invalid current password.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @ApiResponse({ status: 400, description: 'New password must be different from old password.' })
   async updatePassword(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateUserPasswordDto: UpdateUserPasswordDto,
