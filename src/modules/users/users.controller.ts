@@ -10,6 +10,7 @@ import { UsersService } from './services/users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserEntity } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserPasswordDto } from './dto/update-password.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -49,7 +50,7 @@ export class UsersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update user by id' })
-  @ApiResponse({ status: 200, type: UserEntity })
+  @ApiOkResponse({ description: 'User updated', type: UserEntity })
   @ApiResponse({ status: 404, description: 'User not found' })
   async update(
     @Param('id', new ParseUUIDPipe()) id: string, // Envoi Exception si pas un UUID valide.
@@ -58,9 +59,20 @@ export class UsersController {
     return await this.usersService.update(id, updateUserDto);
   }
 
+  @Patch(':id/password')
+  @ApiOperation({ summary: 'Update user password by id' })
+  @ApiOkResponse({ description: 'Password updated', type: UpdateUserPasswordDto })
+  @ApiResponse({ status: 404, description: 'User not foubd' })
+  async updatePassword(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() updateUserPasswordDto: UpdateUserPasswordDto,
+  ) {
+    return await this.usersService.updatePassword(id, updateUserPasswordDto);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user by id' })
-  @ApiResponse({ status: 200, type: UserEntity })
+  @ApiOkResponse({ description: 'User deleted', type: UserEntity })
   @ApiResponse({ status: 404, description: 'User not found' })
   async delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<UserEntity> {
     return await this.usersService.delete(id);

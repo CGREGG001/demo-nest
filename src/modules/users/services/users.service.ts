@@ -1,9 +1,16 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '@core/database/prisma.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { Prisma } from '@prisma/client';
 import { UserEntity } from '../entities/user.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UpdateUserPasswordDto } from '../dto/update-password.dto';
 import * as argon2 from 'argon2';
 
 @Injectable()
@@ -94,6 +101,41 @@ export class UsersService {
     });
 
     return new UserEntity(updatedUser);
+  }
+
+  /**
+   * Mise à jour du password d'un utilisateur
+   */
+  async updatePassword(id: string, dto: UpdateUserPasswordDto): Promise<UserEntity> {
+    // On cherche l'utilisateur directement via Prisma pour être sûr d'avoir le password (le champ est @Exclude dans l'entity)
+    const user = await this.prismaService.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Vérifier si l'ancien password est correct
+    const isPasswordMatching = await argon2.verify(user.password, dto.oldPassword);
+
+    if (!isPasswordMatching) {
+      throw new UnauthorizedException('Invalid current password');
+    }
+
+    // Vérifier que le nouveau n'est pas identique à l'ancien
+    if (dto.oldPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different from the old one');
+    }
+
+    // Hachage du nouveau password
+    const hashedNewPassword = await argon2.hash(dto.newPassword);
+
+    // Mise à jour
+    const updated = await this.prismaService.user.update({
+      where: { id },
+      data: { password: hashedNewPassword },
+    });
+
+    return new UserEntity(updated);
   }
 
   /**
