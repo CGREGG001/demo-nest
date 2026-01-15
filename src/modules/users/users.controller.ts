@@ -66,7 +66,7 @@ export class UsersController {
   async updatePassword(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateUserPasswordDto: UpdateUserPasswordDto,
-  ) {
+  ): Promise<UserEntity> {
     return await this.usersService.updatePassword(id, updateUserPasswordDto);
   }
 
