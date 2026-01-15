@@ -1,8 +1,20 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateUserDto } from './create-user.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * DTO used when updating a User.
- * Inherits all properties from CreateUserDto but makes them optional.
  */
-export class UpdateUserDto extends PartialType(CreateUserDto) {}
+export class UpdateUserDto {
+  @ApiProperty({
+    description: 'Display name of the user (optional)',
+    example: 'John-Doe',
+    required: false,
+  })
+  @Transform(({ value }) => (value as string)?.trim())
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(20)
+  name?: string | null;
+}

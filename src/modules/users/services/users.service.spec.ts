@@ -2,7 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '@core/database/prisma.service';
 import { UserEntity } from '../entities/user.entity';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { instanceToPlain } from 'class-transformer';
@@ -10,6 +15,7 @@ import { instanceToPlain } from 'class-transformer';
 // Simulation du module argon2
 jest.mock('argon2', () => ({
   hash: jest.fn().mockResolvedValue('hashed_password'),
+  verify: jest.fn().mockResolvedValue(true),
 }));
 
 describe('UsersService', () => {
@@ -200,6 +206,98 @@ describe('UsersService', () => {
     });
   });
 
+  /**
+   * TEST UPDATE PASSWORD
+   */
+  describe('updatePassword', () => {
+    const userId = 'uuid-123';
+    const updatePasswordDto = {
+      oldPassword: 'old_password_123',
+      newPassword: 'new_password_456',
+    };
+
+    it('should successfully update the password', async () => {
+      // 1. Simuler l'utilisateur trouvé en DB avec son mot de passe actuel
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: userId,
+        password: 'hashed_old_password',
+      });
+
+      // 2. Simuler que la vérification argon2 réussit
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      // 3. Simuler le retour de l'update Prisma
+      (prisma.user.update as jest.Mock).mockResolvedValue({
+        id: userId,
+        email: 'test@test.com',
+        password: 'hashed_password',
+      });
+
+      const result = await service.updatePassword(userId, updatePasswordDto);
+
+      // Vérifications
+      expect(argon2.verify).toHaveBeenCalledWith(
+        'hashed_old_password',
+        updatePasswordDto.oldPassword,
+      );
+      expect(argon2.hash).toHaveBeenCalledWith(updatePasswordDto.newPassword);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: userId },
+        data: { password: 'hashed_password' },
+      });
+      expect(result).toBeInstanceOf(UserEntity);
+      (argon2.hash as jest.Mock).mockResolvedValue('hashed_new_password');
+
+      // Sécurité : on vérifie que rien ne fuite
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
+    });
+
+    it('should throw UnauthorizedException if old password is incorrect', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: userId,
+        password: 'hashed_old_password',
+      });
+
+      // Simuler l'échec de la vérification
+      (argon2.verify as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.updatePassword(userId, updatePasswordDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+
+      // On vérifie que l'update n'a JAMAIS été appelé
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.updatePassword('invalid-id', updatePasswordDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if new password is same as old', async () => {
+      const samePasswordDto = {
+        oldPassword: 'password123',
+        newPassword: 'password123',
+      };
+
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+        id: userId,
+        password: 'hashed_old_password',
+      });
+      (argon2.verify as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.updatePassword(userId, samePasswordDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   /*
    * DELETE
    */
@@ -207,9 +305,9 @@ describe('UsersService', () => {
     it('should delete a user successfully', async () => {
       const existingUser = { id: 'uuid-123', email: 'test@test.com' };
 
-      // 1. Simuler findOne (pour la vérification d'existence)
+      // Simuler findOne (pour la vérification d'existence)
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(existingUser);
-      // 2. Simuler le delete de Prisma
+      // Simuler le delete de Prisma
       (prisma.user.delete as jest.Mock).mockResolvedValue(existingUser);
 
       const result = await service.delete('uuid-123');
