@@ -100,6 +100,10 @@ prisma/
 src/
   core/
   modules/
+    users/
+      dto/
+      entities/
+      services/
 ```
 
 ---
@@ -110,6 +114,7 @@ src/
 - Prisma 5.22
 - PostgreSQL (Docker)
 - Node.js 22
+- Argon2 hashage du mot de passe
 
 ---
 
@@ -142,6 +147,18 @@ npm run prepare   # Husky
 - [docs/modules/users/module-users.md](docs/modules/users/module-users.md)
 
 ---
+
+## Module documenté
+
+- [Users module (CRUD + secure password update)](docs/modules/users/module-users.md)
+
+Le module couvre :
+
+- création
+- lecture
+- mise à jour du profil
+- mise à jour du mot de passe
+- suppression
 
 ## Restons en contact
 
