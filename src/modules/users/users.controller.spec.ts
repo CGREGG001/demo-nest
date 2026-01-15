@@ -6,10 +6,12 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
   ValidationPipe,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { instanceToPlain } from 'class-transformer';
+import { UpdateUserPasswordDto } from './dto/update-password.dto';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -27,6 +29,7 @@ describe('UsersController', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            updatePassword: jest.fn(),
           },
         },
       ],
@@ -149,6 +152,57 @@ describe('UsersController', () => {
 
       const plain = instanceToPlain(result);
       expect(plain.password).toBeUndefined();
+    });
+  });
+
+  /*
+   * TEST PATCH /users/:id/password (updatePassword)
+   */
+  describe('updatePassword', () => {
+    it('should call service.updatePassword and return result', async () => {
+      const userId = 'uuid-123';
+      const dto: UpdateUserPasswordDto = {
+        oldPassword: 'OldPassword123!',
+        newPassword: 'NewPassword123!',
+      };
+
+      const expectedResult = new UserEntity({
+        id: userId,
+        email: 'test@test.com',
+        name: 'John Doe',
+      });
+
+      (service.updatePassword as jest.Mock).mockResolvedValue(expectedResult);
+
+      const result = await controller.updatePassword(userId, dto);
+
+      // On vérifie que le contrôleur passe bien l'ID et le DTO au service
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(service.updatePassword).toHaveBeenCalledWith(userId, dto);
+
+      expect(result).toBeInstanceOf(UserEntity);
+
+      // Sécurité : on vérifie que rien ne fuite
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
+    });
+
+    it('should propagate UnauthorizedException if old password is wrong', async () => {
+      (service.updatePassword as jest.Mock).mockRejectedValue(new UnauthorizedException());
+
+      await expect(
+        controller.updatePassword('uuid-123', {
+          oldPassword: 'wrong',
+          newPassword: 'new',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should propagate NotFoundException if user does not exist', async () => {
+      (service.updatePassword as jest.Mock).mockRejectedValue(new NotFoundException());
+      await expect(
+        controller.updatePassword('uuid-123', { oldPassword: 'old', newPassword: 'new' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

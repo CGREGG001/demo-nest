@@ -207,7 +207,7 @@ describe('UsersService', () => {
   });
 
   /**
-   * TEST UPDATEPASSWORD
+   * TEST UPDATE PASSWORD
    */
   describe('updatePassword', () => {
     const userId = 'uuid-123';
@@ -247,6 +247,11 @@ describe('UsersService', () => {
         data: { password: 'hashed_password' },
       });
       expect(result).toBeInstanceOf(UserEntity);
+      (argon2.hash as jest.Mock).mockResolvedValue('hashed_new_password');
+
+      // Sécurité : on vérifie que rien ne fuite
+      const plain = instanceToPlain(result);
+      expect(plain.password).toBeUndefined();
     });
 
     it('should throw UnauthorizedException if old password is incorrect', async () => {
