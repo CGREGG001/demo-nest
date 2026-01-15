@@ -1,15 +1,22 @@
-[⬅ Back to README](../README.md)
+[⬅ Back to README](../../../README.md)
 
 ## 1. Présentation du module Users
 
-Le module Users gère la création, la récupération et la représentation des utilisateurs dans l’API.
+Le module `Users` gère :
+
+- la création d’utilisateurs
+- la récupération individuelle ou globale
+- la mise à jour du profil
+- la mise à jour sécurisée du mot de passe
+- la suppression d’un utilisateur
 
 Il s’appuie sur :
 
 - Prisma 5.22 pour l’accès à la base de données
-- DTOs pour la validation des entrées
+- DTOs pour la validation stricte des entrées
 - Entities pour la sérialisation et Swagger
 - NestJS pour l’architecture modulaire
+- Argon2 pour le hash des mots de passe
 
 ## 2. Architecture du module
 
@@ -17,7 +24,8 @@ Il s’appuie sur :
 src/modules/users
 ├── dto
 │   ├── create-user.dto.ts
-│   └── update-user.dto.ts
+│   ├── update-user.dto.ts
+│   └── update-password.dto.ts
 ├── entities
 │   └── user.entity.ts
 ├── services
@@ -28,52 +36,61 @@ src/modules/users
 
 Rôle de chaque fichier
 
-| Fichier                 | Rôle                                       |
-| ----------------------- | ------------------------------------------ |
-| users.module.ts         | Déclare le module et ses dépendances       |
-| users.controller.ts     | Expose les endpoints HTTP                  |
-| users.service.ts        | Contient la logique métier                 |
-| dto/create-user.dto.ts  | Valide et transforme les données d’entrée  |
-| entities/user.entity.ts | Structure les données de sortie et Swagger |
+| Fichier                    | Rôle                                                  |
+| -------------------------- | ----------------------------------------------------- |
+| users.module.ts            | Déclare le module et ses dépendances                  |
+| users.controller.ts        | Expose les endpoints HTTP                             |
+| users.service.ts           | Contient la logique métier                            |
+| dto/create-user.dto.ts     | Valide les données d’entrée pour la création          |
+| dto/update-user.dto.ts     | Valide les mises à jour du profil (hors password)     |
+| dto/update-password.dto.ts | Valide les mises à jour du mot de passe               |
+| entities/user.entity.ts    | Structure les données de sortie et masque le password |
 
 ## 3. Modèle Prisma associé
 
-```json
+```code
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String?
+  password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 ```
 
 ## 4. DTO : validation des entrées
 
-`CreateUserDto` applique :
+`CreateUserDto`
 
-- transformation automatique (`toLowerCase`, `trim`)
-- validation stricte (`IsEmail`, `MaxLength`, etc.)
-- champs optionnels gérés proprement
+- email normalisé (trim, toLowerCase)
+- validation stricte (IsEmail, MaxLength)
+- password obligatoire et sécurisé
 
-Exemple :
+`UpdateUserDto`
 
-```json
-{
-  "email": "john.doe@example.com",
-  "name": "John"
-}
-```
+- **ne contient pas le password**
+- permet uniquement la mise à jour du profil (ex : name)
+
+`UpdateUserPasswordDto`
+
+- oldPassword obligatoire
+- newPassword obligatoire
+- vérification métier dans le service :
+  - ancien password correct
+  - nouveau différent de l’ancien
+  - hash Argon2
 
 ## 5. Entity : structure de sortie
 
 `UserEntity` :
 
-- garantit une sortie propre et documentée
-- masque les champs sensibles (si ajout futur)
+- masque automatiquement le champ password grâce à @Exclude()
+- garantit une sortie propre et cohérente
 - synchronise Swagger avec la réalité de la DB
 
-Swagger affiche automatiquement :
+Exemple de réponse :
 
 ```json
 {
@@ -96,13 +113,14 @@ Body attendu
 ```json
 {
   "email": "john.doe@example.com",
-  "name": "John"
+  "name": "John",
+  "password": "StrongPassword123!"
 }
 ```
 
 ### Réponse
 
-`201 Created`
+Réponse `201 Created`
 
 ```json
 {
@@ -125,8 +143,7 @@ Body attendu
 
 Retourne tous les utilisateurs triés par date de création (plus récent en premier).
 
-Réponse
-`200` OK
+Réponse `200` OK
 
 ```json
 [
@@ -145,23 +162,50 @@ Réponse
 Récupère un utilisateur par son UUID.
 
 - **Validation** : `ParseUUIDPipe` sur l'ID.
-- **Erreur 404** : Si l'utilisateur n'existe pas.
+- **404** : si non trouvé.
 
 ### ➤ PATCH `/users/:id`
 
-Met à jour partiellement un utilisateur.
+Met à jour le profil d'un utilisateur (hors password).
 
-- **DTO** : `UpdateUserDto` (Partial de CreateUserDto).
+- **DTO** : `UpdateUserDto`
 - **Validation** : `ParseUUIDPipe` sur l'ID.
+- **404** : si non trouvé.
+
+### ➤ PATCH `/users/:id/password`
+
+Met à jour le mot de passe d’un utilisateur.
+
+Body attendu :
+
+```json
+{
+  "oldPassword": "OldPassword123!",
+  "newPassword": "NewPassword123!"
+}
+```
+
+Réponses :
+
+| Code | Raison                                |
+| ---- | ------------------------------------- |
+| 200  | Mot de passe mis à jour               |
+| 400  | Nouveau password identique à l’ancien |
+| 401  | Ancien password incorrect             |
+| 404  | Utilisateur non trouvé                |
+
+Le password n’apparaît jamais dans la réponse.
 
 ### ➤ DELETE `/users/:id`
 
 Supprime un utilisateur.
 
-- **Réponse** : `200 OK` avec l'entité supprimée.
 - **Validation** : `ParseUUIDPipe` sur l'ID.
+- **Réponse** : `200 OK` avec l'entité supprimée.
 
 ## 7. Flux interne (Controller → Service → Prisma → Entity)
+
+### Création
 
 ```code
 POST /users
@@ -170,33 +214,48 @@ UsersController.create()
    ↓
 UsersService.create()
    ↓
-PrismaService.user.create()
+argon2.hash(password)
+   ↓
+Prisma.user.create()
    ↓
 new UserEntity()
    ↓
 Réponse API
+
 ```
 
+### Mise à jour du mot de passe
+
 ```code
-PATCH /users/:id
+PATCH /users/:id/password
    ↓
-ParseUUIDPipe (Vérifie le format 400)
+ParseUUIDPipe
    ↓
-UsersController.update()
+UsersController.updatePassword()
    ↓
-UsersService.findOne() (Vérifie l'existence 404)
+UsersService.updatePassword()
    ↓
-UsersService.update()
+Prisma.user.findUnique()
    ↓
-PrismaService.user.update()
+argon2.verify(oldPassword)
+   ↓
+argon2.hash(newPassword)
+   ↓
+Prisma.user.update()
+   ↓
+new UserEntity()
+
 ```
 
 ![alt text](../../assets/usersSequenceDiagram.png)
 
 ## 8. Points forts du module
 
-- Validation stricte des entrées
-- Sérialisation propre et documentée
-- Architecture NestJS standard et scalable
-- Prisma 5.22 stable et compatible Node 22
-- Code lisible, modulaire, maintenable
+- Séparation claire entre update profil et update password
+- Password toujours masqué dans les réponses
+- Hash Argon2 sécurisé
+- Validation stricte via DTO
+- Documentation Swagger complète
+- Tests unitaires complets (service + controller)
+- Architecture NestJS propre et scalable
+- Code lisible, maintenable et prêt pour la production
