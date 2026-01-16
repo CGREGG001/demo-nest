@@ -9,6 +9,7 @@ import { PrismaService } from '@core/database/prisma.service';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { Prisma } from '@prisma/client';
 import { UserEntity } from '../entities/user.entity';
+import { UserAuthEntity } from '@modules/auth/entities/user-auth.entity';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UpdateUserPasswordDto } from '../dto/update-password.dto';
 import * as argon2 from 'argon2';
@@ -148,5 +149,19 @@ export class UsersService {
     const deletedUser = await this.prismaService.user.delete({ where: { id } });
 
     return new UserEntity(deletedUser);
+  }
+
+  /**
+   * Trouver un utilisateur par email
+   * A n'utiliser qu'en interne (pour le auth.service)
+   */
+  async findByEmail(email: string): Promise<UserAuthEntity | null> {
+    const user = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      return null;
+    }
+    return new UserAuthEntity(user);
   }
 }
