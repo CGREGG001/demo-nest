@@ -23,8 +23,8 @@ export class AuthController {
   @ApiOkResponse({ description: 'Return JWT access token' })
   @ApiBadRequestResponse({ description: 'Invalid payload.' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto): Promise<any> {
+    return await this.authService.login(loginDto);
   }
 
   @Post('register')
@@ -32,7 +32,7 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'User successfully created', type: UserEntity })
   @ApiBadRequestResponse({ description: 'Invalid payload.' })
   @ApiConflictResponse({ description: 'Email already exists.' })
-  register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto): Promise<UserEntity> {
+    return await this.authService.register(registerDto);
   }
 }
