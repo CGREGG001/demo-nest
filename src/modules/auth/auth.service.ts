@@ -5,11 +5,15 @@ import { UsersService } from '@modules/users/services/users.service';
 import { UserEntity } from '@modules/users/entities/user.entity';
 import * as argon2 from 'argon2';
 import { UserAuthEntity } from '@modules/auth/entities/user-auth.entity';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   // Injection du service Users
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /**
    * Logique de validation interne
