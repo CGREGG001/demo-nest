@@ -6,6 +6,7 @@ import { UserEntity } from '@modules/users/entities/user.entity';
 import * as argon2 from 'argon2';
 import { UserAuthEntity } from '@modules/auth/entities/user-auth.entity';
 import { JwtService } from '@nestjs/jwt';
+import { access } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -39,12 +40,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    // pour l'instant retourne un user en attente du JWT
-    // Todo : JWT
+    // Le "payload" : ce qui sera visible (mais non modifiable) dans le token
+    const payload = {
+      sub: user.id,
+      email: user.email
+    };
+
     return {
       message: 'Login successful',
+      access_token: await this.jwtService.signAsync(payload),  // Génération du JWT
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      user: user,
+      user: user,  // On garde le retour de l'user pour le confort du frontend
     };
   }
 
