@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '@modules/users/services/users.service';
+import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { UserEntity } from '@modules/users/entities/user.entity';
 import * as argon2 from 'argon2';
@@ -14,6 +15,11 @@ jest.mock('argon2', () => ({
 describe('AuthService', () => {
   let service: AuthService;
 
+  // Mock du JwtService
+  const mockJwtService = {
+    signAsync: jest.fn().mockResolvedValue('fake_jwt_token'), // Simulation du token
+  };
+
   const mockUsersService = {
     findByEmail: jest.fn(),
     create: jest.fn(),
@@ -26,6 +32,10 @@ describe('AuthService', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: JwtService, // AJOUT DU MOCK JWT
+          useValue: mockJwtService,
         },
       ],
     }).compile();
@@ -93,8 +103,11 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         message: 'Login successful',
+        access_token: 'fake_jwt_token', // Vérifie qu'on a bien le token
         user: mockUser,
       });
+
+      expect(mockJwtService.signAsync).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when credentials are invalid', async () => {
