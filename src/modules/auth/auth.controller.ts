@@ -4,7 +4,6 @@ import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -20,10 +19,20 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'User login to receive JWT' })
-  @ApiOkResponse({ description: 'Return JWT access token' })
-  @ApiBadRequestResponse({ description: 'Invalid payload.' })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials.' })
-  async login(@Body() loginDto: LoginDto): Promise<any> {
+  @ApiCreatedResponse({
+    description: 'JWT access token generated successfully.',
+    // On peut même définir la forme de la réponse pour Swagger
+    schema: {
+      example: {
+        message: 'Login successful',
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: { id: 'uuid', email: 'user@example.com' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid payload (missing email or password).' })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials (wrong email or password).' })
+  async login(@Body() loginDto: LoginDto) {
     return await this.authService.login(loginDto);
   }
 
