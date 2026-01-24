@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -13,6 +25,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UserEntity } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-password.dto';
+import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
 @Controller('users')
@@ -33,6 +46,8 @@ export class UsersController {
     return await this.usersService.create(createUserDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Get()
   @ApiOperation({ summary: 'Fetch all users' })
   @ApiOkResponse({
@@ -40,6 +55,8 @@ export class UsersController {
     type: UserEntity, // Swagger gère le tableau via isArray ou le type [UserEntity]
     isArray: true,
   })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized: Missing, invalid or expired token.' })
+  @ApiForbiddenResponse({ description: 'Forbidden: You do not have the necessary permissions.' })
   async findAll(): Promise<UserEntity[]> {
     return await this.usersService.findAll();
   }
